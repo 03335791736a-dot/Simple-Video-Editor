@@ -1,0 +1,48 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.simplevideoeditor.desktop",
+  "productName": "Simple Video Editor",
+  "copyright": "Copyright © 2025 Simple Video Editor",
+  "directories": {
+    "output": "dist-electron-build",
+    "buildResources": "build"
+  },
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "bin/win64",
+      "to": "bin",
+      "filter": ["*.exe"]
+    }
+  ],
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      },
+      {
+        "target": "portable",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "build/icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "allowElevation": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Simple Video Editor",
+    "artifactName": "SimpleVideoEditorSetup.exe",
+    "uninstallDisplayName": "Simple Video Editor"
+  },
+  "portable": {
+    "artifactName": "SimpleVideoEditor-Portable.exe"
+  }
+}

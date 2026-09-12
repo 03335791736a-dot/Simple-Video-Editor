@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null && request.auth.token.email != null;
+    }
+
+    function isOwner(email) {
+      return isAuthenticated() && request.auth.token.email.lower() == email.lower();
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.admin == true ||
+        request.auth.token.email.lower() == "admin@gmail.com"
+      );
+    }
+
+    // Authorized Users Collection
+    // Document ID is user email or uid
+    match /users/{userId} {
+      // Users can read their own authorized profile; Admins can read all profiles
+      allow get: if isOwner(userId) || isOwner(resource.data.email) || isAdmin();
+      allow list: if isAdmin();
+
+      // Only administrators can create, update, or delete authorized users
+      allow create: if isAdmin() &&
+        request.resource.data.keys().hasAll(['email', 'role', 'enabled', 'createdAt']) &&
+        request.resource.data.role in ['admin', 'user'] &&
+        request.resource.data.enabled is bool &&
+        !request.resource.data.keys().hasAny(['password', 'plaintextPassword']);
+
+      allow update: if isAdmin() &&
+        request.resource.data.email == resource.data.email &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        !request.resource.data.keys().hasAny(['password', 'plaintextPassword']);
+
+      allow delete: if isAdmin();
+    }
+
+    // Default deny all other paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

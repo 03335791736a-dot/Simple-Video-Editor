@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Simple Video Editor Firebase Architecture",
+  "description": "Schema definition for authorized users and access control in Simple Video Editor",
+  "collections": {
+    "users": {
+      "description": "Collection of authorized Google accounts with individual access permissions",
+      "rules": "Authenticated users can only read their own record. Only administrators can list, create, update, or delete records. Plaintext passwords are never stored.",
+      "schema": {
+        "type": "object",
+        "required": ["uid", "email", "role", "enabled", "createdAt", "updatedAt"],
+        "properties": {
+          "uid": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "displayName": { "type": "string" },
+          "photoURL": { "type": "string" },
+          "role": { "type": "string", "enum": ["admin", "user"] },
+          "enabled": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "lastLogin": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

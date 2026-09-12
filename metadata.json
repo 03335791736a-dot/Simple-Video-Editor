@@ -1,0 +1,7 @@
+{
+  "name": "Cut and Crop",
+  "description": "Smart rhythmic video editor with automated 2:4 and 4:2 interval cutting, visual crop adjustments, and multi-quality exports from 360p to 4K.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

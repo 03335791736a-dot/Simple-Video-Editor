@@ -1,0 +1,47 @@
+[
+  {
+    "uid": "admin-1789195360066",
+    "email": "admin@gmail.com",
+    "displayName": "System Administrator",
+    "role": "admin",
+    "enabled": true,
+    "passwordHash": "f181787bf80c63afc90dc2011e5e13e25362d9c92b19dc1c9827eb74f7159302e3cfa6a425befc60a1015e208300ea1f5fc1bd699f27429b667b7b1932ce33f5",
+    "salt": "3fc8bf037810034baca9479d9afdd965",
+    "createdAt": "2026-09-12T06:42:40.006Z",
+    "updatedAt": "2026-09-12T06:42:40.006Z"
+  },
+  {
+    "uid": "user-1789195360120-wtsut",
+    "email": "user1@gmail.com",
+    "displayName": "User One",
+    "role": "user",
+    "enabled": true,
+    "passwordHash": "ec441909f6795f1bd977d5be47c7c37776ed24bd730538aafbe5b294048d06f99b3c3ca6cee11ef8f9a2f1ebcffee2429eaaa2cd1daf94a180ae307ae736473d",
+    "salt": "42e188affffb4eeaca3ec0ebdeaec290",
+    "createdAt": "2026-09-12T06:42:40.006Z",
+    "updatedAt": "2026-09-12T06:42:40.006Z",
+    "lastLogin": "2026-09-12T06:42:48.487Z"
+  },
+  {
+    "uid": "user-1789195360163-z4gyh",
+    "email": "user2@gmail.com",
+    "displayName": "User Two",
+    "role": "user",
+    "enabled": true,
+    "passwordHash": "7b363e9a3ab1f0c9afc50797d891be617879f366d6ee92d992dd1849f5deabdcc9de6edeabe77e82701f0816fd0ffcaf75b313f8f5451c90d4af34750052ff7b",
+    "salt": "53ba5f0624bb749d5e0a1c1493b18e61",
+    "createdAt": "2026-09-12T06:42:40.006Z",
+    "updatedAt": "2026-09-12T06:42:40.006Z"
+  },
+  {
+    "uid": "user-1789195360205-13x76",
+    "email": "user3@gmail.com",
+    "displayName": "User Three",
+    "role": "user",
+    "enabled": true,
+    "passwordHash": "258cf35a1e979bec239a3d920f4cec52320c1e5b813934913463285ade334357c586655098f59aa87df8efffa88fb3e87ac3bde7d1c738e1e58017027150d056",
+    "salt": "a49867a5d426519a3a99caa0fbfbb247",
+    "createdAt": "2026-09-12T06:42:40.006Z",
+    "updatedAt": "2026-09-12T06:42:40.006Z"
+  }
+]
