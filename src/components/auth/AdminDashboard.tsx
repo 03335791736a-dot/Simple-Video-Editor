@@ -16,6 +16,8 @@ import {
   ArrowLeft,
   Sparkles,
   Info,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { AdminUserListItem, AuthUser } from '../../types/auth';
@@ -45,6 +47,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onC
     action: 'created' | 'reset';
   } | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+  const [showModalPassword, setShowModalPassword] = useState<boolean>(false);
 
   // Delete confirmation
   const [deleteConfirmEmail, setDeleteConfirmEmail] = useState<string | null>(null);
@@ -270,8 +273,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onC
                 onChange={(e) => setNewUserRole(e.target.value as 'admin' | 'user')}
                 className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-750 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
               >
-                <option value="user">Role: Standard User</option>
-                <option value="admin">Role: Administrator</option>
+                <option value="user">Role: Standard User (Password Required)</option>
+                <option value="admin">Role: Administrator (Google Sign-In Only, No Password)</option>
               </select>
 
               <button
@@ -281,7 +284,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onC
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md active:scale-98 disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 <Key className="w-3.5 h-3.5" />
-                <span>{isAddingUser ? 'Authorizing...' : 'Create & Generate Password'}</span>
+                <span>
+                  {isAddingUser
+                    ? 'Authorizing...'
+                    : newUserRole === 'admin'
+                    ? 'Authorize Admin'
+                    : 'Create & Generate Password'}
+                </span>
               </button>
             </form>
 
@@ -389,15 +398,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onC
                         </td>
 
                         <td className="py-3 px-4 text-right space-x-1.5 whitespace-nowrap">
-                          {/* Reset Password Button */}
-                          <button
-                            id={`btn-reset-pass-${u.email}`}
-                            onClick={() => handleResetPassword(u.email)}
-                            className="px-2.5 py-1 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-800/50 text-[11px] font-medium transition-colors"
-                            title="Generate a new password for this user"
-                          >
-                            Reset Password
-                          </button>
+                          {/* Reset Password Button - regular users only */}
+                          {u.role === 'user' ? (
+                            <button
+                              id={`btn-reset-pass-${u.email}`}
+                              onClick={() => handleResetPassword(u.email)}
+                              className="px-2.5 py-1 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-800/50 text-[11px] font-medium transition-colors"
+                              title="Generate a new password for this user"
+                            >
+                              Reset Password
+                            </button>
+                          ) : (
+                            <span className="text-[11px] text-amber-400/80 font-mono px-2 py-0.5 rounded bg-amber-950/40 border border-amber-900/40">
+                              Google Sign-In Only
+                            </span>
+                          )}
 
                           {/* Toggle Status Button */}
                           <button
@@ -475,17 +490,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onC
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Generated Individual Password:
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-300">
+                  Individual Access Password:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowModalPassword(!showModalPassword)}
+                  className="text-[11px] text-slate-400 hover:text-indigo-300 flex items-center gap-1 transition-colors"
+                >
+                  {showModalPassword ? (
+                    <>
+                      <EyeOff className="w-3.5 h-3.5" />
+                      <span>Hide Password</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Show Password</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
               <div className="flex items-center gap-2">
                 <div className="flex-1 p-3.5 rounded-xl bg-slate-950 border border-indigo-500/50 text-emerald-400 font-mono text-base font-bold tracking-widest text-center select-all">
-                  {generatedModal.password}
+                  {showModalPassword ? generatedModal.password : '••••••••••••••••'}
                 </div>
                 <button
                   id="btn-copy-password"
                   onClick={() => copyPasswordToClipboard(generatedModal.password)}
-                  className="p-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow-md flex items-center justify-center"
+                  className="p-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-colors shadow-md flex items-center justify-center shrink-0"
                   title="Copy password to clipboard"
                 >
                   {copied ? <Check className="w-5 h-5 text-emerald-300" /> : <Copy className="w-5 h-5" />}
@@ -497,13 +532,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, onC
             <div className="p-3 rounded-xl bg-amber-950/50 border border-amber-800/60 text-amber-300 text-xs flex items-start gap-2.5">
               <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <p className="leading-relaxed">
-                <strong>IMPORTANT:</strong> This password will only be displayed once. Copy it now and provide it securely to the user. It is hashed on the server and cannot be retrieved again.
+                Password is securely hashed on the server. You can copy it directly to clipboard to share securely.
               </p>
             </div>
 
             <button
               id="btn-close-pass-modal"
-              onClick={() => setGeneratedModal(null)}
+              onClick={() => {
+                setGeneratedModal(null);
+                setShowModalPassword(false);
+              }}
               className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs transition-colors"
             >
               Done / Close

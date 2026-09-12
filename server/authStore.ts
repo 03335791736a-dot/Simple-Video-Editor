@@ -8,8 +8,8 @@ export interface StoredUser {
   displayName: string;
   role: 'admin' | 'user';
   enabled: boolean;
-  passwordHash: string; // scrypt hex
-  salt: string;         // 16 bytes hex
+  passwordHash?: string; // scrypt hex (only for regular users)
+  salt?: string;         // 16 bytes hex (only for regular users)
   createdAt: string;
   updatedAt: string;
   lastLogin?: string;
@@ -43,7 +43,25 @@ interface SessionData {
 const activeSessions = new Map<string, SessionData>();
 
 /**
- * Generate a cryptographically secure random password formatted as A7K9-X2P4-M8Q1
+ * Check if an email is a configured Admin Gmail
+ */
+export function isConfiguredAdmin(email: string): boolean {
+  if (!email) return false;
+  const normalized = email.toLowerCase().trim();
+
+  // Configured admin emails
+  const envAdmin = (process.env.ADMIN_EMAIL || '').toLowerCase().trim();
+  if (envAdmin && normalized === envAdmin) return true;
+  if (normalized === 'admin@gmail.com') return true;
+  if (normalized === '03335791736a@gmail.com') return true;
+
+  const usersMap = loadUsers();
+  const user = usersMap.get(normalized);
+  return Boolean(user && user.role === 'admin' && user.enabled);
+}
+
+/**
+ * Generate a cryptographically secure random password formatted as A7K9-X2P4-M8Q1 (for regular users)
  */
 export function generateSecurePassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 characters, no ambiguous chars
@@ -59,7 +77,7 @@ export function generateSecurePassword(): string {
 }
 
 /**
- * Hash a password with salt using Node's native scrypt
+ * Hash a password with salt using Node's native scrypt (for regular users)
  */
 export function hashPassword(password: string, salt: string): string {
   const key = crypto.scryptSync(password.normalize('NFKC'), salt, 64, { N: 16384, r: 8, p: 1 });
@@ -67,7 +85,7 @@ export function hashPassword(password: string, salt: string): string {
 }
 
 /**
- * Timing-safe comparison of password
+ * Timing-safe comparison of password (for regular users)
  */
 export function verifyPasswordHash(password: string, salt: string, storedHash: string): boolean {
   try {
@@ -127,34 +145,42 @@ export function toPublicUser(u: StoredUser): PublicUser {
 }
 
 /**
- * Initialize default users (including admin and prompt example accounts)
+ * Initialize default users and ensure configured Admins have NO password requirement
  */
 export function initializeAuthStore() {
   const usersMap = loadUsers();
   const now = new Date().toISOString();
 
-  const adminEmail = (process.env.ADMIN_EMAIL || 'admin@gmail.com').toLowerCase().trim();
+  // Configured Admin accounts - NO passwords, purely Google Sign-In with configured Admin Gmail
+  const configuredAdmins = [
+    (process.env.ADMIN_EMAIL || 'admin@gmail.com').toLowerCase().trim(),
+    '03335791736a@gmail.com',
+    'admin@gmail.com',
+  ];
 
-  // Ensure configured ADMIN_EMAIL exists
-  if (!usersMap.has(adminEmail)) {
-    const salt = crypto.randomBytes(16).toString('hex');
-    const adminPass = 'ADMIN-7K9P-2026';
-    const passwordHash = hashPassword(adminPass, salt);
-    usersMap.set(adminEmail, {
-      uid: `admin-${Date.now()}`,
-      email: adminEmail,
-      displayName: 'System Administrator',
-      role: 'admin',
-      enabled: true,
-      passwordHash,
-      salt,
-      createdAt: now,
-      updatedAt: now,
-    });
-    console.log(`[AUTH] Created default admin: ${adminEmail}`);
+  for (const adminEmail of configuredAdmins) {
+    if (!usersMap.has(adminEmail)) {
+      usersMap.set(adminEmail, {
+        uid: `admin-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        email: adminEmail,
+        displayName: 'System Administrator',
+        role: 'admin',
+        enabled: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      console.log(`[AUTH] Configured admin (no password required): ${adminEmail}`);
+    } else {
+      // Ensure role is admin and strip any password requirement
+      const existing = usersMap.get(adminEmail)!;
+      existing.role = 'admin';
+      delete existing.passwordHash;
+      delete existing.salt;
+      usersMap.set(adminEmail, existing);
+    }
   }
 
-  // Pre-seed the 3 example accounts mentioned in user prompt for instant verification testing
+  // Pre-seed regular user accounts for testing if not present
   const seedAccounts: Array<{ email: string; pass: string; name: string }> = [
     { email: 'user1@gmail.com', pass: 'A7K9-X2P4', name: 'User One' },
     { email: 'user2@gmail.com', pass: 'B8M3-Q7L1', name: 'User Two' },
@@ -177,7 +203,7 @@ export function initializeAuthStore() {
         createdAt: now,
         updatedAt: now,
       });
-      console.log(`[AUTH] Seeded test user: ${acc.email} with linked password: ${acc.pass}`);
+      console.log(`[AUTH] Seeded user account: ${acc.email}`);
     }
   }
 
@@ -196,8 +222,19 @@ export function checkUserAuthorization(email: string): {
   role: 'admin' | 'user';
   displayName: string;
 } {
-  const usersMap = loadUsers();
   const normalized = email.toLowerCase().trim();
+
+  // If matches configured Admin Gmail
+  if (isConfiguredAdmin(normalized)) {
+    return {
+      authorized: true,
+      enabled: true,
+      role: 'admin',
+      displayName: 'System Administrator',
+    };
+  }
+
+  const usersMap = loadUsers();
   const user = usersMap.get(normalized);
 
   if (!user) {
@@ -218,7 +255,105 @@ export function checkUserAuthorization(email: string): {
 }
 
 /**
- * Verify password for a given user email
+ * Authenticate Google User:
+ * Compare authenticated Gmail with configured Admin Gmail.
+ * - If matches Admin Gmail: immediately logs in as Admin with session token. NO password step.
+ * - If normal authorized user: returns that user password is required to unlock editor.
+ * - If unauthorized: denies access.
+ */
+export function authenticateGoogleUser(email: string, displayName?: string): {
+  success: boolean;
+  isAdmin: boolean;
+  user?: PublicUser;
+  token?: string;
+  error?: string;
+  requiresUserPassword?: boolean;
+} {
+  const usersMap = loadUsers();
+  const normalized = email.toLowerCase().trim();
+
+  // 1. Check if configured Admin Gmail
+  if (isConfiguredAdmin(normalized)) {
+    let adminUser = usersMap.get(normalized);
+    const now = new Date().toISOString();
+
+    if (!adminUser) {
+      adminUser = {
+        uid: `admin-${Date.now()}`,
+        email: normalized,
+        displayName: displayName || 'System Administrator',
+        role: 'admin',
+        enabled: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      usersMap.set(normalized, adminUser);
+    }
+
+    if (!adminUser.enabled) {
+      return {
+        success: false,
+        isAdmin: true,
+        error: 'Admin account has been disabled.',
+      };
+    }
+
+    adminUser.lastLogin = now;
+    if (displayName && (!adminUser.displayName || adminUser.displayName === 'System Administrator')) {
+      adminUser.displayName = displayName;
+    }
+    // Remove any leftover password requirement from admin
+    delete adminUser.passwordHash;
+    delete adminUser.salt;
+    usersMap.set(normalized, adminUser);
+    saveUsers(usersMap);
+
+    // Issue active session token immediately for admin - NO PASSWORD REQUIRED
+    const token = crypto.randomBytes(32).toString('hex');
+    activeSessions.set(token, {
+      email: adminUser.email,
+      role: 'admin',
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    });
+
+    return {
+      success: true,
+      isAdmin: true,
+      user: toPublicUser(adminUser),
+      token,
+    };
+  }
+
+  // 2. Normal user check
+  const normalUser = usersMap.get(normalized);
+  if (!normalUser) {
+    return {
+      success: false,
+      isAdmin: false,
+      error: 'Access Denied: Your Google account is not authorized to use this application.',
+    };
+  }
+
+  if (!normalUser.enabled) {
+    return {
+      success: false,
+      isAdmin: false,
+      error: 'Account Disabled: Your account has been disabled by the administrator.',
+    };
+  }
+
+  // Normal authorized user requires their user password to unlock the editor
+  return {
+    success: true,
+    isAdmin: false,
+    requiresUserPassword: true,
+    user: toPublicUser(normalUser),
+  };
+}
+
+/**
+ * Verify password for regular user accounts ONLY.
+ * Admin accounts do NOT use a password.
  */
 export function verifyUserPassword(email: string, password: string): {
   success: boolean;
@@ -234,8 +369,20 @@ export function verifyUserPassword(email: string, password: string): {
     return { success: false, error: 'Your Google account is not authorized to use this application.' };
   }
 
+  // Admin accounts never use a password
+  if (user.role === 'admin' || isConfiguredAdmin(normalized)) {
+    return {
+      success: false,
+      error: 'Admin accounts do not use passwords. Please authenticate with Google Sign-In.',
+    };
+  }
+
   if (!user.enabled) {
     return { success: false, error: 'Your account has been disabled by the administrator.' };
+  }
+
+  if (!user.passwordHash || !user.salt) {
+    return { success: false, error: 'No password is configured for this account.' };
   }
 
   const isValid = verifyPasswordHash(password.trim(), user.salt, user.passwordHash);
@@ -307,15 +454,7 @@ export function verifyIsAdmin(adminEmail?: string, token?: string): boolean {
   }
 
   if (adminEmail) {
-    const usersMap = loadUsers();
-    const user = usersMap.get(adminEmail.toLowerCase().trim());
-    if (user && user.role === 'admin' && user.enabled) {
-      return true;
-    }
-    // Also check if matches process.env.ADMIN_EMAIL
-    if (process.env.ADMIN_EMAIL && adminEmail.toLowerCase().trim() === process.env.ADMIN_EMAIL.toLowerCase().trim()) {
-      return true;
-    }
+    return isConfiguredAdmin(adminEmail);
   }
 
   return false;
@@ -330,7 +469,9 @@ export function getAllUsers(): PublicUser[] {
 }
 
 /**
- * Admin: Add new user and generate initial password
+ * Admin: Add new user.
+ * If role is 'admin', NO password is generated (uses Google Sign-In only).
+ * If role is 'user', generates unique access password.
  */
 export function addUser(email: string, displayName?: string, role: 'admin' | 'user' = 'user'): {
   success: boolean;
@@ -348,16 +489,38 @@ export function addUser(email: string, displayName?: string, role: 'admin' | 'us
     return { success: false, error: 'User with this email already exists.' };
   }
 
+  const now = new Date().toISOString();
+
+  if (role === 'admin') {
+    // Admins do NOT have passwords
+    const newAdmin: StoredUser = {
+      uid: `admin-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      email: normalized,
+      displayName: displayName?.trim() || normalized.split('@')[0],
+      role: 'admin',
+      enabled: true,
+      createdAt: now,
+      updatedAt: now,
+    };
+    usersMap.set(normalized, newAdmin);
+    saveUsers(usersMap);
+
+    return {
+      success: true,
+      user: toPublicUser(newAdmin),
+    };
+  }
+
+  // Regular user: generate individual access password
   const generatedPassword = generateSecurePassword();
   const salt = crypto.randomBytes(16).toString('hex');
   const passwordHash = hashPassword(generatedPassword, salt);
-  const now = new Date().toISOString();
 
   const newUser: StoredUser = {
     uid: `user-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     email: normalized,
     displayName: displayName?.trim() || normalized.split('@')[0],
-    role,
+    role: 'user',
     enabled: true,
     passwordHash,
     salt,
@@ -376,7 +539,8 @@ export function addUser(email: string, displayName?: string, role: 'admin' | 'us
 }
 
 /**
- * Admin: Reset user password
+ * Admin: Reset regular user password.
+ * Admin accounts do NOT have passwords to reset.
  */
 export function resetUserPassword(email: string): {
   success: boolean;
@@ -391,6 +555,13 @@ export function resetUserPassword(email: string): {
     return { success: false, error: 'User not found.' };
   }
 
+  if (user.role === 'admin' || isConfiguredAdmin(normalized)) {
+    return {
+      success: false,
+      error: 'Admin accounts do not use passwords. Admin authenticates via Google Sign-In with configured Admin Gmail.',
+    };
+  }
+
   const newPassword = generateSecurePassword();
   const newSalt = crypto.randomBytes(16).toString('hex');
   const newHash = hashPassword(newPassword, newSalt);
@@ -402,7 +573,7 @@ export function resetUserPassword(email: string): {
   usersMap.set(normalized, user);
   saveUsers(usersMap);
 
-  // Invalidate any active sessions for this user so they must re-authenticate with new password
+  // Invalidate active sessions for this user so they re-authenticate with new password
   for (const [token, session] of activeSessions.entries()) {
     if (session.email.toLowerCase().trim() === normalized) {
       activeSessions.delete(token);

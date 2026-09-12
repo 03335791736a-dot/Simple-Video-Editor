@@ -4,11 +4,13 @@ import fs from 'fs';
 import os from 'os';
 import multer from 'multer';
 import { createServer as createViteServer } from 'vite';
-import { exportMedia, probeMediaFile } from './electron/ffmpeg';
-import { ExportJobOptions } from './src/types/electron';
+import { exportMedia, probeMediaFile } from './server/mediaEngine';
+import { ExportJobOptions } from './src/types/editor';
 import { spawn } from 'child_process';
 import {
   checkUserAuthorization,
+  authenticateGoogleUser,
+  isConfiguredAdmin,
   verifyUserPassword,
   validateSessionToken,
   revokeSessionToken,
@@ -53,6 +55,12 @@ app.use(express.json());
 // Serve uploads and exports statically
 app.use('/media-files', express.static(uploadsDir));
 app.use('/exported-files', express.static(exportsDir));
+
+// Serve FFmpeg WebAssembly core assets statically for offline/local browser execution
+const ffmpegCoreDir = path.join(process.cwd(), 'node_modules/@ffmpeg/core/dist/esm');
+if (fs.existsSync(ffmpegCoreDir)) {
+  app.use('/ffmpeg-core', express.static(ffmpegCoreDir));
+}
 
 // Active export jobs
 interface JobState {
@@ -103,6 +111,21 @@ app.get('/api/health', (_req, res) => {
 // ==========================================
 // AUTHENTICATION & ACCESS CONTROL API ROUTES
 // ==========================================
+
+// 0. Google Sign-In & Admin Instant Authentication (No Admin Password)
+app.post('/api/auth/google-login', (req, res) => {
+  try {
+    const { email, displayName } = req.body;
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ success: false, error: 'Email is required' });
+    }
+    const result = authenticateGoogleUser(email, displayName);
+    res.json(result);
+  } catch (err: any) {
+    console.error('Google login error:', err);
+    res.status(500).json({ success: false, error: 'Failed to authenticate Google user' });
+  }
+});
 
 // 1. Verify User Email Authorization
 app.post('/api/auth/verify-user', (req, res) => {

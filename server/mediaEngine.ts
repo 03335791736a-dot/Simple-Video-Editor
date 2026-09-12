@@ -2,30 +2,21 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { ExportJobOptions, MediaProbeResult } from '../src/types/electron';
+import { ExportJobOptions, MediaProbeResult } from '../src/types/editor';
 
 // Find executable paths for ffmpeg and ffprobe
 export function getBinaryPaths(): { ffmpegPath: string; ffprobePath: string } {
   const platform = process.platform;
   const ext = platform === 'win32' ? '.exe' : '';
 
-  // 1. Check extraResources / bundled location in packaged Electron app
-  if ((process as any).resourcesPath) {
-    const bundledFfmpeg = path.join((process as any).resourcesPath, 'bin', `ffmpeg${ext}`);
-    const bundledFfprobe = path.join((process as any).resourcesPath, 'bin', `ffprobe${ext}`);
-    if (fs.existsSync(bundledFfmpeg) && fs.existsSync(bundledFfprobe)) {
-      return { ffmpegPath: bundledFfmpeg, ffprobePath: bundledFfprobe };
-    }
-  }
-
-  // 2. Check local project bin directory
+  // 1. Check local project bin directory
   const localFfmpeg = path.join(process.cwd(), 'bin', platform === 'win32' ? 'win64' : platform, `ffmpeg${ext}`);
   const localFfprobe = path.join(process.cwd(), 'bin', platform === 'win32' ? 'win64' : platform, `ffprobe${ext}`);
   if (fs.existsSync(localFfmpeg) && fs.existsSync(localFfprobe)) {
     return { ffmpegPath: localFfmpeg, ffprobePath: localFfprobe };
   }
 
-  // 3. Check @ffmpeg-installer and @ffprobe-installer packages
+  // 2. Check @ffmpeg-installer and @ffprobe-installer packages
   try {
     const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
     const ffprobeInstaller = require('@ffprobe-installer/ffprobe');
@@ -36,7 +27,7 @@ export function getBinaryPaths(): { ffmpegPath: string; ffprobePath: string } {
     // Ignore fallback
   }
 
-  // 4. Default to system PATH
+  // 3. Default to system PATH
   return {
     ffmpegPath: `ffmpeg${ext}`,
     ffprobePath: `ffprobe${ext}`,
@@ -175,7 +166,7 @@ export function computeCutSegments(
     isKeep = !isKeep;
   }
 
-  // Safety fallback if no segments were kept (e.g., video shorter than cut window)
+  // Safety fallback if no segments were kept
   if (kept.length === 0 && totalDuration > 0) {
     const fallbackEnd = Math.min(totalDuration, 1);
     kept.push({ start: 0, end: fallbackEnd });

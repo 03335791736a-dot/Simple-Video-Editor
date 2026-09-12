@@ -163,6 +163,7 @@ export default function App() {
 
   const handleResetProject = () => {
     if (window.confirm('Start a new project? This will clear the active video and generated outputs.')) {
+      mediaService.cleanup();
       setVideo(null);
       setGeneratedResult(null);
       setCrop(defaultCrop);
@@ -284,7 +285,16 @@ export default function App() {
 
   // Not authenticated or not unlocked with password -> Show Login Screen
   if (!authUser) {
-    return <LoginScreen onAuthenticated={(user) => setAuthUser(user)} />;
+    return (
+      <LoginScreen
+        onAuthenticated={(user, openAdmin) => {
+          setAuthUser(user);
+          if (openAdmin || user.role === 'admin') {
+            setShowAdminDashboard(true);
+          }
+        }}
+      />
+    );
   }
 
   return (

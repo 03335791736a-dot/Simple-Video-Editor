@@ -55,10 +55,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </h3>
               <p className="text-xs text-slate-400">
                 {isCompleted
-                  ? 'Your video was processed locally using FFmpeg'
+                  ? 'Your video was processed locally in your browser using FFmpeg WebAssembly'
                   : isError
                   ? 'Could not complete video export'
-                  : 'Local H.264 & AAC encoding in progress'}
+                  : 'Local browser H.264 & AAC encoding in progress'}
               </p>
             </div>
           </div>
@@ -117,24 +117,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({
         <div className="flex items-center gap-2 pt-2">
           {isCompleted && (
             <>
-              <button
-                id="btn-open-output-folder"
-                onClick={onOpenFolder}
-                className="flex-1 py-2.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md transition-all"
-              >
-                <FolderOpen className="w-4 h-4" />
-                <span>Open Output Folder</span>
-              </button>
-
               {progress.outputUrl && (
                 <a
                   id="btn-download-mp4"
                   href={progress.outputUrl}
-                  download="SimpleVideoEditor_Export.mp4"
-                  className="py-2.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
+                  download="CutAndCrop_Export.mp4"
+                  className="flex-1 py-2.5 px-4 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-md shadow-indigo-600/30 transition-all"
                 >
                   <Download className="w-4 h-4" />
-                  <span>Download MP4</span>
+                  <span>Download Video (MP4)</span>
                 </a>
               )}
 

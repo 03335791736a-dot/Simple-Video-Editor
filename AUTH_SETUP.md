@@ -59,10 +59,11 @@ For instant testing and evaluation without needing immediate Google Cloud creden
 
 | Google Account | Password | Role | Expected Status |
 | :--- | :--- | :--- | :--- |
-| `user1@gmail.com` | `A7K9-X2P4` | User | Authorized / Active |
-| `user2@gmail.com` | `B8M3-Q7L1` | User | Authorized / Active |
-| `user3@gmail.com` | `C4R9-N5K2` | User | Authorized / Active |
-| `admin@gmail.com` | `ADMIN-7K9P-2026` | Admin | Authorized / Full Dashboard Access |
+| `03335791736a@gmail.com` | *None (Google Sign-In Only)* | Admin | Authorized / Full Dashboard Access Immediately |
+| `admin@gmail.com` | *None (Google Sign-In Only)* | Admin | Authorized / Full Dashboard Access Immediately |
+| `user1@gmail.com` | `A7K9-X2P4` | User | Authorized / Individual Password Unlock |
+| `user2@gmail.com` | `B8M3-Q7L1` | User | Authorized / Individual Password Unlock |
+| `user3@gmail.com` | `C4R9-N5K2` | User | Authorized / Individual Password Unlock |
 | `unauthorized@gmail.com` | Any | None | **Access Denied** |
 
 ### Test Matrix Scenarios

@@ -62,7 +62,7 @@ export const Header: React.FC<HeaderProps> = ({
           onClick={onLoadDemoClip}
           disabled={isProcessing}
           className="px-3.5 py-1.5 rounded-lg bg-purple-950/60 hover:bg-purple-900/60 text-purple-300 hover:text-purple-100 text-xs font-semibold flex items-center gap-1.5 border border-purple-800/50 hover:border-purple-600 transition-all disabled:opacity-40"
-          title="Load a 24-second demo video to test 2:4 and 4:2 rhythm cuts immediately"
+          title="Load a 24-second demo video to try 2:4 and 4:2 rhythm cuts immediately"
         >
           <Sparkles className="w-3.5 h-3.5 text-purple-400" />
           <span className="hidden sm:inline">Load Demo Video</span>
@@ -89,7 +89,7 @@ export const Header: React.FC<HeaderProps> = ({
             id="btn-open-admin-dashboard"
             onClick={onOpenAdmin}
             className="px-3 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/60 text-amber-300 hover:text-amber-100 text-xs font-semibold border border-amber-800/60 transition-all flex items-center gap-1.5 shadow-sm"
-            title="Open Admin Access & Password Management"
+            title="Open Admin Dashboard"
           >
             <Shield className="w-3.5 h-3.5 text-amber-400" />
             <span>Admin</span>

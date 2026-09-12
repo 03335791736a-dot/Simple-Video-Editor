@@ -12,7 +12,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { VideoAsset } from '../types/editor';
-import { mediaService } from '../services/mediaService';
+import { webFfmpegService } from '../services/webFfmpegService';
 
 interface UploadHeroProps {
   onVideoUploaded: (video: VideoAsset) => void;
@@ -39,38 +39,38 @@ export const UploadHero: React.FC<UploadHeroProps> = ({
     }
 
     setError(null);
-    setUploadProgress(`Uploading ${file.name}...`);
+    setUploadProgress(`Loading ${file.name}...`);
 
     try {
-      const formData = new FormData();
-      formData.append('files', file);
+      const objectUrl = URL.createObjectURL(file);
+      let probe = {
+        duration: 10,
+        width: 1920,
+        height: 1080,
+        size: file.size,
+        format: file.type,
+      };
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
+      try {
+        probe = await webFfmpegService.probeVideo(file);
+      } catch (probeErr) {
+        console.warn('Browser video probe fallback:', probeErr);
+      }
+
+      onVideoUploaded({
+        id: `vid-${Date.now()}`,
+        name: file.name,
+        path: file.name,
+        url: objectUrl,
+        file,
+        duration: probe.duration || 1,
+        width: probe.width || 1920,
+        height: probe.height || 1080,
+        size: file.size,
+        format: probe.format || file.type,
       });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Upload failed');
-      }
-
-      const data = await res.json();
-      if (data.files && data.files.length > 0) {
-        const uploaded = data.files[0];
-        onVideoUploaded({
-          id: uploaded.id,
-          name: uploaded.name,
-          path: uploaded.path,
-          url: uploaded.url,
-          duration: uploaded.duration || 1,
-          width: uploaded.width || 1920,
-          height: uploaded.height || 1080,
-          size: uploaded.size,
-        });
-      }
     } catch (err: any) {
-      setError(err.message || 'Error processing video upload');
+      setError(err.message || 'Error loading video file in browser');
     } finally {
       setUploadProgress(null);
     }

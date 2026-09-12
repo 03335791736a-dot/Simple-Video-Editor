@@ -5,10 +5,9 @@
     "displayName": "System Administrator",
     "role": "admin",
     "enabled": true,
-    "passwordHash": "f181787bf80c63afc90dc2011e5e13e25362d9c92b19dc1c9827eb74f7159302e3cfa6a425befc60a1015e208300ea1f5fc1bd699f27429b667b7b1932ce33f5",
-    "salt": "3fc8bf037810034baca9479d9afdd965",
     "createdAt": "2026-09-12T06:42:40.006Z",
-    "updatedAt": "2026-09-12T06:42:40.006Z"
+    "updatedAt": "2026-09-12T06:42:40.006Z",
+    "lastLogin": "2026-09-12T08:09:00.762Z"
   },
   {
     "uid": "user-1789195360120-wtsut",
@@ -20,7 +19,7 @@
     "salt": "42e188affffb4eeaca3ec0ebdeaec290",
     "createdAt": "2026-09-12T06:42:40.006Z",
     "updatedAt": "2026-09-12T06:42:40.006Z",
-    "lastLogin": "2026-09-12T06:42:48.487Z"
+    "lastLogin": "2026-09-12T07:43:36.438Z"
   },
   {
     "uid": "user-1789195360163-z4gyh",
@@ -43,5 +42,15 @@
     "salt": "a49867a5d426519a3a99caa0fbfbb247",
     "createdAt": "2026-09-12T06:42:40.006Z",
     "updatedAt": "2026-09-12T06:42:40.006Z"
+  },
+  {
+    "uid": "admin-1789196317536",
+    "email": "03335791736a@gmail.com",
+    "displayName": "03335791736a",
+    "role": "admin",
+    "enabled": true,
+    "createdAt": "2026-09-12T06:58:37.482Z",
+    "updatedAt": "2026-09-12T06:58:37.482Z",
+    "lastLogin": "2026-09-12T08:21:41.612Z"
   }
 ]

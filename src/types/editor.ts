@@ -9,6 +9,7 @@ export interface VideoAsset {
   thumbnailUrl?: string;
   size?: number;
   format?: string;
+  file?: File;
 }
 
 export interface ImageAsset {
@@ -21,6 +22,7 @@ export interface ImageAsset {
   height?: number;
   thumbnailUrl?: string;
   size?: number;
+  file?: File;
 }
 
 export interface AudioAsset {
@@ -31,6 +33,7 @@ export interface AudioAsset {
   duration: number; // in seconds
   size?: number;
   format?: string;
+  file?: File;
 }
 
 export type AspectRatioType = 'free' | '16:9' | '9:16' | '1:1' | '4:3' | '21:9';
@@ -109,3 +112,32 @@ export interface ProjectState {
   pattern: PatternSettings;
   exportSettings: ExportSettings;
 }
+
+export interface MediaProbeResult {
+  format: string;
+  duration: number;
+  width?: number;
+  height?: number;
+  fps?: number;
+  size: number;
+  hasAudio: boolean;
+  hasVideo: boolean;
+}
+
+export interface ExportJobOptions {
+  videoPath?: string;
+  images?: Array<{ path: string; duration: number }>;
+  audioPath?: string;
+  crop?: {
+    enabled: boolean;
+    x: number; // percentage 0 - 100
+    y: number;
+    width: number;
+    height: number;
+  };
+  pattern?: PatternSettings;
+  resolution: ExportResolution;
+  duplicateFillAudio?: boolean;
+  outputPath: string;
+}
+

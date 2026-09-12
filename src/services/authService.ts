@@ -40,12 +40,12 @@ class AuthService {
     photoURL?: string;
     uid: string;
   }> {
-    // If testing with a custom email directly (e.g. quick selector or simulation)
+    // If email is provided directly
     if (customEmail) {
       return {
         email: customEmail.toLowerCase().trim(),
         displayName: customEmail.split('@')[0],
-        uid: `test-${customEmail}`,
+        uid: `auth-${customEmail}`,
       };
     }
 
@@ -74,10 +74,49 @@ class AuthService {
     }
 
     // Fallback if Firebase is not yet configured with production keys in .env
-    // Prompt the user for their Google email or provide testing options
     throw new Error(
-      'FIREBASE_NOT_CONFIGURED: Firebase API keys not set in environment. Use the quick test account selector below or configure VITE_FIREBASE_API_KEY in .env.'
+      'FIREBASE_NOT_CONFIGURED: Please enter your authorized Google email address below or configure Firebase keys in .env.'
     );
+  }
+
+  /**
+   * Authenticate Google User on backend:
+   * Compares Gmail with configured Admin Gmail.
+   * If matches Admin Gmail: immediately opens session without an admin password.
+   * If regular user: returns authorization status and password requirement.
+   */
+  async loginWithGoogle(email: string, displayName?: string): Promise<{
+    success: boolean;
+    isAdmin: boolean;
+    user?: AuthUser;
+    token?: string;
+    requiresUserPassword?: boolean;
+    error?: string;
+  }> {
+    const res = await fetch('/api/auth/google-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, displayName }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return {
+        success: false,
+        isAdmin: Boolean(data.isAdmin),
+        error: data.error || 'Authentication failed.',
+      };
+    }
+
+    // If Admin, save session immediately
+    if (data.isAdmin && data.token && data.user) {
+      this.currentToken = data.token;
+      this.currentUser = data.user;
+      sessionStorage.setItem(SESSION_TOKEN_KEY, data.token);
+      sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(data.user));
+    }
+
+    return data;
   }
 
   /**
